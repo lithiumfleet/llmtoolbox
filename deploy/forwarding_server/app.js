@@ -3,44 +3,96 @@ const axios = require('axios');
 
 const app = express();
 
+app.use(express.json());
+
+// config ports
 const serverPort = 9880;
-
-
+const startPort = 9870;
+const endPort = 9879;
 
 
 
 // lookup table with init
-const table = new Map();
-async function updateOne(port) {
-  try {
-    const resp = await axios.get(`http://localhost:${port}/v1/models`);
-    const respData = resp.data;
-    const modelNames = Array.from(respData.data, (item) => item.id );
-    modelNames.forEach((mname) => { 
-      table.set(mname, port);
-      console.log(`add rule: ${mname} --> ${port}`);
-    });
-  } catch(error) {
-    console.log("no model runs on " + port);
-  }
-}
+let table = new Map();
 
 async function updateNameWithPort(start, end) {
-  // listen ports from 9870-9879
   console.log("[info] updating table...");
+  // listen ports from 9870-9879
   const listeningPorts = Array.from( { length: end-start+1 }, (_, i) => i+start );
+
+  const newTable = new Map();
+  async function updateOne(port) {
+    try {
+      const resp = await axios.get(`http://localhost:${port}/v1/models`);
+      const respData = resp.data;
+      const modelNames = Array.from(respData.data, (item) => item.id );
+      modelNames.forEach((mname) => { 
+        newTable.set(mname, port); // FIXME: this set will cause conflictions
+        console.log(`add rule: ${mname} --> ${port}`);
+      });
+    } catch(error) {
+      console.log("no model runs on " + port);
+    }
+  }
   await Promise.allSettled(listeningPorts.map(updateOne));
+
+  table = newTable;
   console.log(table);
 }
 
-updateNameWithPort(9870, 9879);
+updateNameWithPort(startPort, endPort);
 
 
+async function viewModels(validPorts) {
+  const results = await Promise.all(
+    validPorts.map(async (port) => {
+      const resData = await axios.get(`http://localhost:${port}/v1/models`);
+      return resData.data.data;
+    })
+  );
+  return results;
+}
 
 
 // Forwarding server config
-app.get('/v1/models', (req, res) => { })
-app.post('/v1/chat/completions', (req, res) => { })
+app.get('/v1/models', async (req, res) => {
+  try {
+    updateNameWithPort(startPort, endPort);
+    const validPorts = Array.from(table.values());
+    const validResp = await viewModels(validPorts);
+    res.status(200).json({ "object": "list", "data": validResp });
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    // Handle errors gracefully, e.g., return a specific error response
+    res.status(500).json({ error: 'Failed to retrieve models' });
+  }
+});
+
+
+app.post('/v1/chat/completions', (req, res) => {
+  const reqModel = req.body.model;
+  const reqPort = table.get(reqModel);
+  if (reqPort === undefined) {
+    const errorMsg = {
+      "object": "error",
+      "message": `The model \`${reqModel}\` does not exist.`,
+      "type": "NotFoundError",
+      "param": null,
+      "code": 404
+    }
+    res.status(404).json(errorMsg);
+  } else {
+    axios.post(`http://localhost:${reqPort}/v1/chat/completions`, req.body)
+      .then((result) => {
+        console.log(result.data);
+        res.status(200).json(result.data);
+      }).catch((err) => {
+        console.log(err);
+        res.status(404).json(err);
+      });
+  }
+
+})
 
 
 
