@@ -1,0 +1,52 @@
+# ======= How to use ========
+# 1. config model_path 
+# 2. if use lora, set enable_lora to true and set lora_path
+# 3. config CUDA_DEVICE and port
+# 4. use cpolar start server according to port
+# 5. ./bin/launch_server.sh
+# 6. now model name is model_path or "lora", api is from cpolar
+# ============================
+
+# args for model
+
+# model_path="/data/lixubin/models/Qwen/Qwen1.5-72B-Chat-GPTQ-Int4"
+# model_path="/data/lixubin/models/Qwen/Qwen1.5-14B-Chat"
+model_path="/data/lixubin/models/Qwen/Qwen1.5-1.8B-Chat"
+# model_path="/data/lixubin/models/baichuan-inc/Baichuan2-13B-Chat"
+# model_path="/data/lixubin/MiraAgent-server/temp_full/"
+
+enable_lora=false
+
+# lora_path="/data/lixubin/LLaMA-Factory/tuning_output/04-17_03-22/output"
+# lora_path="/data/lixubin/LLaMA-Factory/tuning_output/03-26_03-46/output"
+
+# parameters for server
+max_model_len=16047
+export CUDA_VISIBLE_DEVICES=0
+num_gpu_use=1
+api_port=9874
+
+# openai compatable api server
+## to check args: /data/lixubin/MiraAgent/.env/lib/python3.11/site-packages/vllm/entrypoints/openai/cli_args.py
+
+if [ $enable_lora = false ]; then
+    echo "Starting server without lora."
+    echo "You are loading: "$model_path
+    python -m vllm.entrypoints.openai.api_server \
+        --model $model_path \
+        --port $api_port \
+        --max-model-len $max_model_len \
+        --tensor-parallel-size $num_gpu_use
+fi
+if [ $enable_lora = true ]; then
+    echo "Starting server using lora."
+    echo "You are loading: "$model_path" with lora from "$lora_path
+    python -m vllm.entrypoints.openai.api_server \
+        --model $model_path \
+        --port $api_port \
+        --max-model-len $max_model_len \
+        --tensor-parallel-size $num_gpu_use \
+        --lora-modules lora=$lora_path \
+        --enable-lora \
+        --max-lora-rank 64
+fi
