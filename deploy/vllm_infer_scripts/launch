@@ -3,33 +3,79 @@
 # 2. if use lora, set enable_lora to true and set lora_path
 # 3. config CUDA_DEVICE and port
 # 4. use cpolar start server according to port
-# 5. ./bin/launch_server.sh
+# 5. pass args to launch_server.sh
 # 6. now model name is model_path or "lora", api is from cpolar
 # ============================
 
-# args for model
+# FIXME: no stream support: https://github.com/vllm-project/vllm/discussions/245
 
+
+# get args
+while [ "$1" != "" ]; do
+    case "$1" in
+        --uselora) 
+            enable_lora=true
+            shift
+            ;;
+        -m | --model)
+            model_path="$2"
+            shift 2
+            ;;
+        -p | --port)
+            api_port="$2"
+            shift 2
+            ;;
+        -gpu)
+            export CUDA_VISIBLE_DEVICES="$2"
+            shift 2
+            ;;
+        -l | --lora_path)
+            lora_path="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown arg: "$1
+            exit 1
+            ;;
+    esac
+done
+
+
+# args for model
+# model_path="/data/lixubin/models/Qwen/Qwen1.5-1.8B-Chat"
 # model_path="/data/lixubin/models/Qwen/Qwen1.5-72B-Chat-GPTQ-Int4"
 # model_path="/data/lixubin/models/Qwen/Qwen1.5-14B-Chat"
-model_path="/data/lixubin/models/Qwen/Qwen1.5-1.8B-Chat"
 # model_path="/data/lixubin/models/baichuan-inc/Baichuan2-13B-Chat"
 # model_path="/data/lixubin/MiraAgent-server/temp_full/"
 
-enable_lora=false
-
+# enable_lora=false
 # lora_path="/data/lixubin/LLaMA-Factory/tuning_output/04-17_03-22/output"
 # lora_path="/data/lixubin/LLaMA-Factory/tuning_output/03-26_03-46/output"
 
 # parameters for server
+# export CUDA_VISIBLE_DEVICES=0
+# api_port=9873
+if [ -z "$CUDA_VISIBLE_DEVICES" ]; then
+    num_gpu_use=0
+else
+    num_gpu_use=$(echo $CUDA_VISIBLE_DEVICES | tr ',' '\n' | grep -c '^')
+fi
 max_model_len=16047
-export CUDA_VISIBLE_DEVICES=0
-num_gpu_use=1
-api_port=9874
+
+echo "======== ARGS ========="
+echo "model_path: "$model_path
+echo "enable_lora: "$enable_lora
+echo "lora_path: "$lora_path
+echo "CUDA_VISIBLE_DEVICES: "$CUDA_VISIBLE_DEVICES
+echo "num_gpu_use: "$num_gpu_use
+echo "api_port: "$api_port
+echo "======================="
+echo ""
 
 # openai compatable api server
 ## to check args: /data/lixubin/MiraAgent/.env/lib/python3.11/site-packages/vllm/entrypoints/openai/cli_args.py
 
-if [ $enable_lora = false ]; then
+if [ -z "$enable_lora" ]; then
     echo "Starting server without lora."
     echo "You are loading: "$model_path
     python -m vllm.entrypoints.openai.api_server \
@@ -37,8 +83,7 @@ if [ $enable_lora = false ]; then
         --port $api_port \
         --max-model-len $max_model_len \
         --tensor-parallel-size $num_gpu_use
-fi
-if [ $enable_lora = true ]; then
+else
     echo "Starting server using lora."
     echo "You are loading: "$model_path" with lora from "$lora_path
     python -m vllm.entrypoints.openai.api_server \

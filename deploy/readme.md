@@ -1,15 +1,20 @@
-这里是一个使用express搭建的转发服务器.
+usage:
 
-```mermaid
-flowchart LR
-    subgraph vllm_server
-        model1
-        model2
-        model3
-    end
-    subgraph forwarding_server
-    end
-    vllm_server-->forwarding_server
-```
+1. use launch script in vllm_infer_scripts which receives some args:
+    + -m: path to model
+    + -l: path to lora, if --uselora is not set, -l will be ignored.
+    + -uselora: enable use lora
+    + -gpu: a comma list to devices. e.g -gpu 1,2,3,4
+    + -p: port. set this to 9870-9879
 
-vllm_servers使用固定范围的端口, 默认从12340~12350
+2. use node launch forwarding server: node forwarding_server/app.js
+
+3. use cpolar to expose 9880 (i have had a server on 9880 :-)
+
+4. fresh the server: get http://localhost:9880/v1/models to fresh the forwarding rules
+
+WARNING: only /v1/models and /v1/chat/completion can be correctly redirect now...
+
+e.g (plz cd to correct dir)
+1. ./launch -m /data/lixubin/models/Qwen/Qwen1.5-72B-Chat-GPTQ-Int4 -p 9874 -gpu  1,3
+2. node app.js
