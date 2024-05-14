@@ -1,3 +1,4 @@
 .env_LLMToolBox/
 node_modules/
 __pycache__/
+.env/

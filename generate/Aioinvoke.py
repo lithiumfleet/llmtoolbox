@@ -1,38 +1,32 @@
-from dataclasses import dataclass, field, asdict
-from typing import Union
-import aiohttp
-from aiohttp import ClientSession
+from Chain import Chain
+from State import State
+from LLM import LLM
+from Task import *
 import asyncio
-import json
 
+# current: 
+# a specific task, rewrite ruozhiba ds with argumented tone.
+# more general pipline is still in developing...
 
+def rewrite_ruozhiba():
+    url = "http://localhost:9880"
+    req = {
+            "model": "Qwen/Qwen1.5-1.8B-Chat-GGUF",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hello!"
+                }
+            ],
+            "temperature": 0.8
+        }
+    def inittest(state:State):
+        state.req = req
 
+    with LLM.connect(url,"lm-studio") as llm:
+        chain = Chain(inittest, llm, print_resp)
+        asyncio.run(chain.invoke())
+        
+        
 
-class Res:
-    def __init__(self) -> None:
-        pass
-
-
-
-@dataclass
-class Req:
-    pass
-
-
-
-
-class llm:
-
-    def __init__(self) -> None:
-        self.url: str
-        self.key: str = "sk-"
-
-    def invoke(inputs: str|list[str]):
-        pass # 
-
-    @staticmethod
-    async def fetch(session:ClientSession , url:str, data:Req) -> Res:
-        async with session.post(url, json=asdict(data)) as resp:
-            return await Res(resp)
-
-    
+rewrite_ruozhiba()
