@@ -41,10 +41,8 @@ def init_state(index, session, dataset:Dataset):
     }
 
 def print_resp(state: State):
-    print(f"""
-[input]     {state.question}
-[original]  {state.answer}
-[rewrite]   {state.resp}""")
+    print(f""" [resp]
+{state.resp}""")
 
 
 

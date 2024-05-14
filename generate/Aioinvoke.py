@@ -8,7 +8,7 @@ import asyncio
 # a specific task, rewrite ruozhiba ds with argumented tone.
 # more general pipline is still in developing...
 
-def rewrite_ruozhiba():
+async def rewrite_ruozhiba():
     url = "http://localhost:9880"
     req = {
             "model": "Qwen/Qwen1.5-1.8B-Chat-GGUF",
@@ -23,10 +23,10 @@ def rewrite_ruozhiba():
     def inittest(state:State):
         state.req = req
 
-    with LLM.connect(url,"lm-studio") as llm:
+    async with LLM.connect(url,"lm-studio") as llm:
         chain = Chain(inittest, llm, print_resp)
-        asyncio.run(chain.invoke())
-        
+        await chain.invoke()
         
 
-rewrite_ruozhiba()
+
+asyncio.run(rewrite_ruozhiba())
