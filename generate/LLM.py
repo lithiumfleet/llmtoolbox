@@ -4,15 +4,16 @@ from queue import PriorityQueue
 import asyncio
 from dataclasses import dataclass, field
 from heapq import heapify, heappush, heappop
+import datetime
 
 @dataclass
 class Req:
-    req_id: int
+    id: int
     req: dict
 
 @dataclass
 class Resp:
-    resp_id: int
+    id: int
     resp: str
 
 
@@ -33,24 +34,21 @@ class LLM:
         return cls(url, apikey, max_concurrency)
 
     async def __aenter__(self):
-        if self.session is None:
-            self.session = ClientSession(base_url=self.url, headers={"Authorization": f"{self.apikey}"})
+        print("opening session.")
+        self.session = ClientSession(base_url=self.url, headers={"Authorization": f"{self.apikey}"})
         return self
 
     async def __aexit__(self, exc_type, exc_val, traceback):
-        self.session.close()
-        self.session = None
+        print("session will be closed.")
+        await self.session.close()
 
     async def _send(self, req:Req) -> Resp:
+        print(f"sending req{req.id}")
         async with self.session.post("/v1/chat/completions", json=req.req) as resp:
-            return Resp(req.req_id, await resp.json())
+            resp = Resp(req.id, await resp.json())
+        return resp
 
-    # async def add_req(self, req:dict) -> int:
-    #     req_id = heappop(self.index_manager) # FIXME: empty index not considered
-    #     await self.req_pool.put(asyncio.create_task(self._send(Req(req_id, req))))
-    #     return req_id
-
-    async def __call__(self, req:dict) -> dict:
+    async def __call__(self, req_data:dict) -> dict:
         """
         call with openai-api compatible payload.
 
@@ -67,11 +65,11 @@ class LLM:
             "temperature": 0.8
         }
         """
-        # req_id = await self.add_req(req)
-        # return await self.recv_resp(req_id)
-        # 容我先把串行跑通
-        return await self._send(Req(0, req))
+        req_id = self.timestamp()
+        return await self._send(Req(req_id, req_data))
 
-
-        
-    
+    @staticmethod
+    def timestamp() -> int:
+        current_datetime = datetime.datetime.now()
+        current_timestamp_us = int(current_datetime.timestamp() * 1000000)
+        return current_timestamp_us

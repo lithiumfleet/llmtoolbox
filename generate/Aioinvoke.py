@@ -10,7 +10,7 @@ import asyncio
 
 async def rewrite_ruozhiba():
     url = "http://localhost:9880"
-    req = {
+    req1 = {
             "model": "Qwen/Qwen1.5-1.8B-Chat-GGUF",
             "messages": [
                 {
@@ -20,12 +20,23 @@ async def rewrite_ruozhiba():
             ],
             "temperature": 0.8
         }
-    def inittest(state:State):
-        state.req = req
-
+    req2 = {
+            "model": "Qwen/Qwen1.5-1.8B-Chat-GGUF",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Write a tiny story about a llama in my yard."
+                }
+            ],
+            "temperature": 0.8
+        }
+    def init(state, init_data):
+        state.req = init_data
+    
     async with LLM.connect(url,"lm-studio") as llm:
-        chain = Chain(inittest, llm, print_resp)
-        await chain.invoke()
+        chain = Chain(init, llm, print_resp)
+        await asyncio.gather(chain.invoke(req1), chain.invoke(req2), chain.invoke(req1), chain.invoke(req1), chain.invoke(req2))
+
         
 
 

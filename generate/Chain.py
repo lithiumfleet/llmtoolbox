@@ -12,13 +12,15 @@ class Chain:
         self.func_list = func_list
         self.state = State()
     
-    async def invoke(self):
+    async def invoke(self, init_data=None):
         """
         go through the functions and excute each of them.
         if the function is async, the chain will await it.
         """
-        for func in self.func_list:
-            if isinstance(func, LLM):
+        for index, func in enumerate(self.func_list):
+            if index == 0 and init_data is not None:
+                func(self.state, init_data)
+            elif isinstance(func, LLM):
                 # this must be llm.__call__
                 self.state.resp = await func(self.state.req)
             else:
