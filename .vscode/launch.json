@@ -5,10 +5,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Aioinvoke",
+      "name": "Demo",
       "type": "debugpy",
       "request": "launch",
-      "program": "./generate/Aioinvoke.py",
+      "program": "./generate/Demo.py",
       "console": "integratedTerminal"
     },
     {

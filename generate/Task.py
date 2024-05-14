@@ -1,14 +1,11 @@
 from asyncio import sleep
 from aiohttp import ClientSession
 from State import State
+from LLM import LLM
+from Chain import LLMChain
+import asyncio
 from datasets import load_dataset, Dataset
 
-# basic functions
-async def llm(state:State):
-    if not state.has('session'):
-        state.session = ClientSession(state.url)
-    state.resp = await state.session.post("/v1/chat/completions",json=state.payload)
-    state.resp = await state.resp.text()
 
 def init_state(index, session, dataset:Dataset):
     """
@@ -42,30 +39,42 @@ def init_state(index, session, dataset:Dataset):
 
 def print_resp(state: State):
     print(f""" [resp]
-{state.resp}""")
+{state.resp}
 
+""")
 
+async def demo():
+    # url = "http://localhost:9880"
+    # model = "Qwen/Qwen1.5-1.8B-Chat-GGUF"
+    url = "https://llmsapi.vip.cpolar.cn"
+    model = "/data/lixubin/models/Qwen/Qwen1.5-14B-Chat/"
+    req1 = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hello!"
+                }
+            ],
+            "temperature": 0.8
+        }
+    req2 = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Write a tiny joke about a llama in my yard within about 100 word."
+                }
+            ],
+            "temperature": 0.8
+        }
+    reqs = [req1, req2, req1, req1, req2]
 
+    def get_state(req):
+        state = State()
+        state.req = req
+        return state
 
-
-
-def fun1(state):
-    state.url = "http://127.0.0.1:9880"
-    state.model = "Qwen1.5-14B-Chat"
-    state.payload = {
-        "model": state.model,
-        "messages": [
-            {
-                "role": "user",
-                "content": "以外星飞船降落在地球上为题写一个短篇小说."
-            }
-        ],
-        "temperature": 0.8
-    }
-
-async def fun2(state):
-    await llm(state)
-
-async def fun3(state):
-    # print(f"state in func3: {state.resp}", flush=True)
-    await state.session.close()
+    async with LLM.connect(url,"lm-studio") as llm:
+        chain = LLMChain(llm=llm, after=print_resp)
+        await asyncio.gather(*[chain.invoke(get_state(req)) for req in reqs])

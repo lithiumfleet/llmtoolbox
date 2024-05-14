@@ -1,43 +1,39 @@
 from timeit import timeit
 from typing import Callable
 import asyncio
+from typing import Any
 from inspect import iscoroutinefunction as isasync
 from State import State
-from LLM import LLM
+from LLM import LLM, Req, Resp
 from collections import namedtuple
+from functools import partial
 
 
 class Chain:
-    def __init__(self, *func_list: list[Callable]):
-        self.func_list = func_list
+    def __init__(self, *callable_list: list[Callable]):
+        self.callable_list = callable_list
         self.state = State()
     
-    async def invoke(self, init_data=None):
+    async def invoke(self, init_state:State=None):
         """
         go through the functions and excute each of them.
         if the function is async, the chain will await it.
         """
-        for index, func in enumerate(self.func_list):
-            if index == 0 and init_data is not None:
-                func(self.state, init_data)
-            elif isinstance(func, LLM):
+        if init_state is not None:
+            self.state = init_state
+
+        for operate in self.callable_list:
+            if isinstance(operate, LLM):
                 # this must be llm.__call__
-                self.state.resp = await func(self.state.req)
+                self.state.resp = await operate(self.state.req)
+            elif isinstance(operate, Chain):
+                operate.invoke(self.init_state)
+            elif isinstance(operate, Callable):
+                operate(self.state)
             else:
-                func(self.state)
-    
-    
+                pass
 
-if __name__ == "__main__":
-    from Task import *
-    import sys
-    def main(max_num=1):
-        chains = [Chain(fun1, fun2, fun3) for _ in range(max_num)]
-        # asyncio.run([chain.invoke()]*10)
 
-        tasks = [chain.invoke() for chain in chains]
-        async def aiomain():
-            await asyncio.gather(*tasks)
-        asyncio.run(aiomain())
-    
-    main(int(sys.argv[1]))
+class LLMChain(Chain):
+    def __init__(self, prepare:Callable=None, llm:LLM=None, after:Callable=None):
+        super().__init__(prepare, llm, after)

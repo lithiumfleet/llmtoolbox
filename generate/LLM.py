@@ -5,6 +5,7 @@ import asyncio
 from dataclasses import dataclass, field
 from heapq import heapify, heappush, heappop
 import datetime
+from State import State
 
 @dataclass
 class Req:
