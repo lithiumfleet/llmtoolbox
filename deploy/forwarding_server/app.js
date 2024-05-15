@@ -75,6 +75,34 @@ app.get('/v1/models', async (req, res) => {
 });
 
 
+// forwarding chat service
+function streamHandler(url, req, res) {
+  axios.post(url, req.body, {responseType: 'stream'})
+  .then(stream => {
+    // handle if recv data
+    stream.data.on('data', (chunck) => {
+      // console.log(chunck.toString());
+      res.write(chunck);
+    });
+    // handle if recv end
+    stream.data.on('end', () => {
+      res.end();
+    });
+  })
+}
+
+function normalHandler(url, req, res) {
+  axios.post(url, req.body)
+  .then((result) => {
+    console.log(result.data);
+    res.status(200).json(result.data);
+  }).catch((err) => {
+    console.log(err);
+    res.status(404).json(err);
+  });
+}
+
+
 app.post('/v1/chat/completions', (req, res) => {
   const reqModel = req.body.model;
   const reqPort = table.get(reqModel);
@@ -88,17 +116,11 @@ app.post('/v1/chat/completions', (req, res) => {
     }
     res.status(404).json(errorMsg);
   } else {
-    axios.post(`http://localhost:${reqPort}/v1/chat/completions`, req.body)
-      .then((result) => {
-        console.log(result.data);
-        res.status(200).json(result.data);
-      }).catch((err) => {
-        console.log(err);
-        res.status(404).json(err);
-      });
+    const url = `http://localhost:${reqPort}/v1/chat/completions`;
+    if (req.body.stream=true) { streamHandler(url, req, res); } 
+    else { normalHandler(url, req, res); }
   }
-
-})
+});
 
 
 
