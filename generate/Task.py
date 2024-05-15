@@ -5,6 +5,8 @@ from LLM import LLM
 from Chain import LLMChain
 import asyncio
 from datasets import load_dataset, Dataset
+from DataFormat import Resp
+from dataclasses import asdict
 
 
 def init_state(index, session, dataset:Dataset):
@@ -38,16 +40,17 @@ def init_state(index, session, dataset:Dataset):
     }
 
 def print_resp(state: State):
+    resp:Resp = state.resp
     print(f""" [resp]
-{state.resp}
+{asdict(resp.data)}
 
 """)
 
 async def demo():
-    # url = "http://localhost:9880"
-    # model = "Qwen/Qwen1.5-1.8B-Chat-GGUF"
-    url = "https://llmsapi.vip.cpolar.cn"
-    model = "/data/lixubin/models/Qwen/Qwen1.5-14B-Chat/"
+    url = "http://localhost:9880"
+    model = "Qwen/Qwen1.5-1.8B-Chat-GGUF"
+    # url = "https://llmsapi.vip.cpolar.cn"
+    # model = "/data/lixubin/models/Qwen/Qwen1.5-14B-Chat/"
     req1 = {
             "model": model,
             "messages": [

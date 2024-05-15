@@ -1,0 +1,17 @@
+{
+  "id": "chatcmpl-x2rlj7d7l0tg1vo20dm08w",
+  "object": "chat.completion",
+  "created": 1715738165,
+  "model": "Qwen/Qwen1.5-1.8B-Chat-GGUF/qwen1_5-1_8b-chat-q2_k.gguf",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Why was the llama sad? Because it had to cross my yard, one leg at a time, with its fluffy pelt. The ground was uneven and slippery, and every time it stopped for just one hop, the back legs would slip, causing it to fall down and scratch its head. It kept trying again, but nothing seemed to work, until finally the entire thing toppled over in a hilarious display of stubbornness."
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": { "prompt_tokens": 87, "completion_tokens": 86, "total_tokens": 173 }
+}

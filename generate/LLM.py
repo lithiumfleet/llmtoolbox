@@ -2,27 +2,16 @@ from aiohttp import ClientSession
 from asyncio import Queue
 from queue import PriorityQueue
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from heapq import heapify, heappush, heappop
 import datetime
 from State import State
-
-@dataclass
-class Req:
-    id: int
-    req: dict
-
-@dataclass
-class Resp:
-    id: int
-    resp: str
+from DataFormat import Req, ReqData, Resp
 
 
 class LLM:
     """
     LLM is a forwarding proxy controls the max concurrency.
-    
-    use `llm(req)` will add the request to queue and send.
     """
 
     def __init__(self, url:str, apikey:str, max_concurrency:int):
@@ -45,11 +34,10 @@ class LLM:
 
     async def _send(self, req:Req) -> Resp:
         print(f"sending req{req.id}")
-        async with self.session.post("/v1/chat/completions", json=req.req) as resp:
-            resp = Resp(req.id, await resp.json())
-        return resp
+        async with self.session.post("/v1/chat/completions", json=asdict(req.data)) as resp:
+            return Resp(req.id, await resp.json())
 
-    async def __call__(self, req_data:dict) -> dict:
+    async def __call__(self, req_data:ReqData|dict) -> Resp:
         """
         call with openai-api compatible payload.
 
@@ -67,7 +55,8 @@ class LLM:
         }
         """
         req_id = self.timestamp()
-        return await self._send(Req(req_id, req_data))
+        req = Req(req_id, req_data) if isinstance(req_data, ReqData) else Req(req_id, ReqData(**req_data))
+        return await self._send(req)
 
     @staticmethod
     def timestamp() -> int:
