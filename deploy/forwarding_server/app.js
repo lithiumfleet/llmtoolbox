@@ -40,7 +40,13 @@ async function updateNameWithPort(start, end) {
   console.log(table);
 }
 
-updateNameWithPort(startPort, endPort);
+// update table every 15s.
+setInterval(()=>{
+  updateNameWithPort(startPort, endPort)
+    .catch(error => {
+      console.log(`[error] server has no response from port ${serverPort}, can not update forwarding table. error info: ${error}`);
+    })
+},15000);
 
 
 async function viewModels(validPorts) {
