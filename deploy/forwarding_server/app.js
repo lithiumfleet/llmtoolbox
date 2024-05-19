@@ -117,7 +117,7 @@ app.post('/v1/chat/completions', (req, res) => {
     res.status(404).json(errorMsg);
   } else {
     const url = `http://localhost:${reqPort}/v1/chat/completions`;
-    if (req.body.stream=true) { streamHandler(url, req, res); } 
+    if (req.body.stream===true) { streamHandler(url, req, res); } 
     else { normalHandler(url, req, res); }
   }
 });
